@@ -38,6 +38,10 @@ enum Commands {
         /// Length of tokens to output
         #[arg(short, long, default_value_t = 0)]
         output_len: u16,
+
+        /// reverse tokens (support for older RandomStringUtils)
+        #[arg(long, default_value_t = false)]
+        old: bool,
     },
     RandomAlphabetic {
         /// Output of RandomStringUtils.randomAlphabetic(n)
@@ -50,6 +54,10 @@ enum Commands {
         /// Length of tokens to output
         #[arg(short, long, default_value_t = 0)]
         output_len: u16,
+
+        /// reverse tokens (support for older RandomStringUtils)
+        #[arg(long, default_value_t = false)]
+        old: bool,
     },
     NextInt {
         /// Outputs of random.nextInt(n)
@@ -66,16 +74,25 @@ enum Commands {
     }
 }
 
+fn reverse_string(s: &str) -> String {
+    s.chars().rev().collect()
+}
+
 fn main() {
     let args = Args::parse();
     match &args.command {
-        Some(Commands::RandomAlphanumeric { token, count, output_len }) => {
-            let token_len = token.len();
+        Some(Commands::RandomAlphanumeric { token, count, output_len, old }) => {
+            let actual_token = if *old {
+                reverse_string(&token)
+            } else {
+                token.to_string()
+            };
+            let token_len = actual_token.len();
             if token_len < 9 {
                 eprintln!("[!] Token length is {}, but a token of at least 9 characters is needed. Results may be incorrect.", token_len);
             }
 
-            let outputs = token.bytes().map(|b| (b - 32) as u128).collect::<Vec<u128>>();
+            let outputs = actual_token.bytes().map(|b| (b - 32) as u128).collect::<Vec<u128>>();
             let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
             let seed = recover_seed(outputs, true);
             let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
@@ -95,17 +112,26 @@ fn main() {
                 }
                 let l = if *output_len == 0 { token_len } else { *output_len as usize };
                 for _ in 0..*count {
-                    println!("{}", rsu.random_alphanumeric(l));
+                    if *old {
+                        println!("{}", reverse_string(&rsu.random_alphanumeric(l)));
+                    } else {
+                        println!("{}", rsu.random_alphanumeric(l));
+                    }
                 }
             }
         },
-        Some(Commands::RandomAlphabetic { token, count, output_len }) => {
-            let token_len = token.len();
+        Some(Commands::RandomAlphabetic { token, count, output_len, old }) => {
+            let actual_token = if *old {
+                reverse_string(&token)
+            } else {
+                token.to_string()
+            };
+            let token_len = actual_token.len();
             if token_len < 9 {
                 eprintln!("[!] Token length is {}, but a token of at least 9 characters is needed. Results may be incorrect.", token_len);
             }
 
-            let outputs = token.bytes().map(|b| (b - 32) as u128).collect::<Vec<u128>>();
+            let outputs = actual_token.bytes().map(|b| (b - 32) as u128).collect::<Vec<u128>>();
             let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
             let seed = recover_seed(outputs, false);
             let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
@@ -125,7 +151,11 @@ fn main() {
                 }
                 let l = if *output_len == 0 { token_len } else { *output_len as usize };
                 for _ in 0..*count {
-                    println!("{}", rsu.random_alphabetic(l));
+                    if *old {
+                        println!("{}", reverse_string(&rsu.random_alphabetic(l)));
+                    } else {
+                        println!("{}", rsu.random_alphabetic(l));
+                    }
                 }
             }
         },
