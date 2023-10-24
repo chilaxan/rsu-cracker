@@ -5,17 +5,17 @@ use itertools::iproduct;
 use crate::util::{compute_left, compute_right_i, recover_seed_from_x1};
 use crate::random_string_utils::RandomStringUtils;
 
-pub fn check_seed(seed: u128, outputs: &Vec<u128>) -> bool {
+pub fn check_seed(seed: u128, outputs: &Vec<u128>, alphanumeric: bool) -> bool {
     let mut rsu = RandomStringUtils::new_raw(seed);
     for i in 1..(outputs.len().min(9)) {
-        if outputs[i] != rsu.random_alphanumeric_first_u128() - 32 {
+        if outputs[i] != (if alphanumeric {rsu.random_alphanumeric_first_u128()} else {rsu.random_alphabetic_first_u128()}) - 32 {
             return false;
         }
     }
     true
 }
 
-pub fn recover_state(outputs: Vec<u128>) -> Option<u128> {
+pub fn recover_state(outputs: Vec<u128>, alphanumeric: bool) -> Option<u128> {
     let mut all_skips: Vec<(usize, usize, usize)> = Vec::new();
     for (s1, s2, s3) in iproduct!(0..8, 0..8, 0..8) {
         all_skips.push((s1, s2, s3));
@@ -36,7 +36,7 @@ pub fn recover_state(outputs: Vec<u128>) -> Option<u128> {
                 }
                 for x1_u31_guess in x1_u31_guesses.unwrap() {
                     let seed = (x1_u31_guess << 17) | x1_l17_guess;
-                    if check_seed(seed, &outputs) {
+                    if check_seed(seed, &outputs, alphanumeric) {
                         return Some(seed);
                     }
                 }
@@ -46,8 +46,8 @@ pub fn recover_state(outputs: Vec<u128>) -> Option<u128> {
     })
 }
 
-pub fn recover_seed(outputs: Vec<u128>) -> Option<u128> {
-    let x1 = recover_state(outputs);
+pub fn recover_seed(outputs: Vec<u128>, alphanumeric: bool) -> Option<u128> {
+    let x1 = recover_state(outputs, alphanumeric);
     if x1.is_none() {
         return None;
     }

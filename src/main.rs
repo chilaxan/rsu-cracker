@@ -1,5 +1,6 @@
 pub mod util;
 pub mod java_random;
+//pub mod java_thread_local_random;
 pub mod java_random_crack;
 pub mod random_string_utils;
 pub mod random_string_utils_crack;
@@ -9,10 +10,17 @@ use clap::{Parser, Subcommand};
 use random_string_utils::RandomStringUtils;
 use random_string_utils_crack::recover_seed;
 use java_random::JavaRandom;
+//use java_thread_local_random::JavaThreadLocalRandom;
 use java_random_crack::recover_seed as java_recover_seed;
 
 #[derive(Parser)]
 struct Args {
+    //#[arg(long, short='t', default_value_t = false)]
+    //use_thread_local_random: bool,
+
+    //#[arg(long, short='i', default_value_t = 0)]
+    //thread_id: u128,
+
     #[command(subcommand)]
     command: Option<Commands>
 }
@@ -21,6 +29,18 @@ struct Args {
 enum Commands {
     RandomAlphanumeric {
         /// Output of RandomStringUtils.randomAlphanumeric(n)
+        token: String,
+
+        /// Number of tokens to output
+        #[arg(short, long, default_value_t = 10)]
+        count: u16,
+
+        /// Length of tokens to output
+        #[arg(short, long, default_value_t = 0)]
+        output_len: u16,
+    },
+    RandomAlphabetic {
+        /// Output of RandomStringUtils.randomAlphabetic(n)
         token: String,
 
         /// Number of tokens to output
@@ -48,7 +68,6 @@ enum Commands {
 
 fn main() {
     let args = Args::parse();
-
     match &args.command {
         Some(Commands::RandomAlphanumeric { token, count, output_len }) => {
             let token_len = token.len();
@@ -58,7 +77,7 @@ fn main() {
 
             let outputs = token.bytes().map(|b| (b - 32) as u128).collect::<Vec<u128>>();
             let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-            let seed = recover_seed(outputs);
+            let seed = recover_seed(outputs, true);
             let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
             eprintln!("\n");
             eprintln!("[*] Finished running after {}s", ((end - start) as f64)/1000.0);
@@ -77,6 +96,36 @@ fn main() {
                 let l = if *output_len == 0 { token_len } else { *output_len as usize };
                 for _ in 0..*count {
                     println!("{}", rsu.random_alphanumeric(l));
+                }
+            }
+        },
+        Some(Commands::RandomAlphabetic { token, count, output_len }) => {
+            let token_len = token.len();
+            if token_len < 9 {
+                eprintln!("[!] Token length is {}, but a token of at least 9 characters is needed. Results may be incorrect.", token_len);
+            }
+
+            let outputs = token.bytes().map(|b| (b - 32) as u128).collect::<Vec<u128>>();
+            let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+            let seed = recover_seed(outputs, false);
+            let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+            eprintln!("\n");
+            eprintln!("[*] Finished running after {}s", ((end - start) as f64)/1000.0);
+
+            if seed.is_none() {
+                eprintln!("[-] Could not recover seed!");
+            } else {
+                eprintln!("[+] Java Random seed recovered: {}", seed.unwrap());
+                let mut rsu = RandomStringUtils::new(seed.unwrap());
+                rsu.random_alphabetic(token_len);
+                if *count == 1 {
+                    eprintln!("[+] The next token is:");
+                } else {
+                    eprintln!("[+] The next {} tokens are:", count);
+                }
+                let l = if *output_len == 0 { token_len } else { *output_len as usize };
+                for _ in 0..*count {
+                    println!("{}", rsu.random_alphabetic(l));
                 }
             }
         },

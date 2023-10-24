@@ -28,7 +28,7 @@ impl JavaRandom {
             return (bound * r) >> 31;
         }
         loop {
-            if (r as i32) - (r as i32).rem_euclid(bound as i32) + (m as i32) < 0 {
+            if (r as i64) - (r as i64).rem_euclid(bound as i64) + (m as i64) < 0 {
                 r = self.next(31);
             } else {
                 break;
