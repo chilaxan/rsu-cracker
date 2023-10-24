@@ -13,6 +13,7 @@ use java_random::JavaRandom;
 use java_random_crack::recover_seed as java_recover_seed;
 
 #[derive(Parser)]
+#[command(arg_required_else_help(true))]
 struct Args {
     #[command(subcommand)]
     command: Option<Commands>
