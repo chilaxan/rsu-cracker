@@ -1,16 +1,21 @@
 use crate::java_random::JavaRandom;
 
+pub fn reverse_string(s: &str) -> String {
+    s.chars().rev().collect()
+}
+
 pub struct RandomStringUtils {
-    pub random: JavaRandom
+    pub random: JavaRandom,
+    pub old: bool
 }
 
 impl RandomStringUtils {
-    pub fn new(seed: u128) -> Self {
-        Self { random: JavaRandom::new(seed) }
+    pub fn new(seed: u128, old: bool) -> Self {
+        Self { random: JavaRandom::new(seed), old }
     }
 
-    pub fn new_raw(seed: u128) -> Self {
-        Self { random: JavaRandom::new_raw(seed) }
+    pub fn new_raw(seed: u128, old: bool) -> Self {
+        Self { random: JavaRandom::new_raw(seed), old }
     }
 
     pub fn random_string(&mut self, count: usize, alphanumeric: bool) -> String {
@@ -26,7 +31,11 @@ impl RandomStringUtils {
                 out.push(code_point);
             }
         }
-        out
+        if self.old {
+            reverse_string(&out)
+        } else {
+            out
+        }
     }
 
     pub fn random_string_first_u128(&mut self, alphanumeric: bool) -> u128 {
