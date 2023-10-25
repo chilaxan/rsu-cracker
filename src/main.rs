@@ -104,7 +104,7 @@ fn crack_randomstring(token: &String, count: u16, output_len: u16, old: bool, al
         let mut delta = 1;
         let mut rolled_seed = rsu.random.seed;
         let mut check_token = token.to_string();
-        let mut new_check_token = String::from("");
+        let mut new_check_token = String::new();
         let mut new_token;
         if previous > 1 {
             eprintln!("[+] The previous {} tokens were:", previous);
@@ -112,7 +112,7 @@ fn crack_randomstring(token: &String, count: u16, output_len: u16, old: bool, al
             eprintln!("[+] The previous token was:");
         }
         while previous > 0 {
-            new_token = String::from("");
+            new_token = String::new();
             while check_token != new_token {
                 let mut rolling_rsu = RandomStringUtils::new_raw(rolled_seed, old);
                 rolled_seed = rollback_seed(rolled_seed);
