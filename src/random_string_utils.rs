@@ -25,17 +25,11 @@ impl RandomStringUtils {
         let mut out = String::new();
         while out.len() < count {
             let code_point = (self.random.next_int(gap) + start) as u8 as char;
-            if alphanumeric && code_point.is_alphanumeric() {
-                out.push(code_point);
-            } else if code_point.is_alphabetic() {
+            if code_point.is_alphabetic() || alphanumeric && code_point.is_alphanumeric() {
                 out.push(code_point);
             }
         }
-        if self.old {
-            reverse_string(&out)
-        } else {
-            out
-        }
+        if self.old {reverse_string(&out)} else {out}
     }
 
     pub fn random_string_first_u128(&mut self, alphanumeric: bool) -> u128 {

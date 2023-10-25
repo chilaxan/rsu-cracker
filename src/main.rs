@@ -11,6 +11,7 @@ use random_string_utils::reverse_string;
 use random_string_utils_crack::recover_seed;
 use java_random::JavaRandom;
 use java_random_crack::recover_seed as java_recover_seed;
+use util::rollback_seed;
 
 #[derive(Parser)]
 #[command(arg_required_else_help(true))]
@@ -37,6 +38,9 @@ enum Commands {
         #[arg(long, default_value_t = false)]
         old: bool,
 
+        /// previous tokens to generate (newest to oldest)
+        #[arg(long, short, default_value_t = 0)]
+        previous: u128,
     },
     RandomAlphabetic {
         /// Output of RandomStringUtils.randomAlphabetic(n)
@@ -54,6 +58,9 @@ enum Commands {
         #[arg(long, default_value_t = false)]
         old: bool,
 
+        /// previous tokens to generate (newest to oldest)
+        #[arg(long, short, default_value_t = 0)]
+        previous: u128,
     },
     NextInt {
         /// Outputs of random.nextInt(n)
@@ -70,7 +77,7 @@ enum Commands {
     }
 }
 
-fn crack_randomstring(token: &String, count: u16, output_len: u16, old: bool, alphanumeric: bool) {
+fn crack_randomstring(token: &String, count: u16, output_len: u16, old: bool, alphanumeric: bool, mut previous: u128) {
     let actual_token = if old {
         reverse_string(&token)
     } else {
@@ -94,22 +101,55 @@ fn crack_randomstring(token: &String, count: u16, output_len: u16, old: bool, al
         eprintln!("[+] Java Random seed recovered: {}", seed.unwrap());
         let l = if output_len == 0 { token_len } else { output_len as usize };
         let mut rsu = RandomStringUtils::new(seed.unwrap(), old);
+        let mut delta = 1;
+        let mut rolled_seed = rsu.random.seed;
+        let mut check_token = token.to_string();
+        let mut new_check_token = String::from("");
+        let mut new_token;
+        if previous > 1 {
+            eprintln!("[+] The previous {} tokens are:", previous);
+        } else if previous == 1 {
+            eprintln!("[+] The previous token was:");
+        }
+        while previous > 0 {
+            new_token = String::from("");
+            while check_token != new_token {
+                let mut rolling_rsu = RandomStringUtils::new_raw(rolled_seed, old);
+                rolled_seed = rollback_seed(rolled_seed);
+                new_check_token = if alphanumeric {
+                    rolling_rsu.random_alphanumeric(token_len)
+                } else {
+                    rolling_rsu.random_alphabetic(token_len)
+                };
+                new_token = if alphanumeric {
+                    rolling_rsu.random_alphanumeric(token_len)
+                } else {
+                    rolling_rsu.random_alphabetic(token_len)
+                };
+            }
+            check_token = new_check_token.clone();
+            eprintln!("[Δ-{}] {}", delta, check_token);
+            previous -= 1;
+            delta += 1;
+        }
         if alphanumeric {
             rsu.random_alphanumeric(token_len);
         } else {
             rsu.random_alphabetic(token_len);
         }
+        delta = 1;
         if count == 1 {
             eprintln!("[+] The next token is:");
         } else {
             eprintln!("[+] The next {} tokens are:", count);
         }
         for _ in 0..count {
-            println!("{}", if alphanumeric {
+            println!("[Δ+{}] {}", delta, if alphanumeric {
                 rsu.random_alphanumeric(l)
             } else {
                 rsu.random_alphabetic(l)
             });
+            delta += 1;
         }
     }
 }
@@ -117,11 +157,11 @@ fn crack_randomstring(token: &String, count: u16, output_len: u16, old: bool, al
 fn main() {
     let args = Args::parse();
     match &args.command {
-        Some(Commands::RandomAlphanumeric { token, count, output_len, old }) => {
-            crack_randomstring(token, *count, *output_len, *old, true);
+        Some(Commands::RandomAlphanumeric { token, count, output_len, old, previous }) => {
+            crack_randomstring(token, *count, *output_len, *old, true, *previous);
         },
-        Some(Commands::RandomAlphabetic { token, count, output_len, old }) => {
-            crack_randomstring(token, *count, *output_len, *old, false);
+        Some(Commands::RandomAlphabetic { token, count, output_len, old, previous}) => {
+            crack_randomstring(token, *count, *output_len, *old, false, *previous);
         },
         Some(Commands::NextInt { outputs, n, count }) => {
             let need = (48. / (*n as f32).log2()).ceil() as usize;

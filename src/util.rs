@@ -68,6 +68,10 @@ pub fn recover_seed_from_x1(x1: u128) -> u128 {
     ((((x1 - ADDEND).rem_euclid(MASK + 1) * MULTIPLIER_INV) & MASK) ^ MULTIPLIER) & MASK
 }
 
+pub fn rollback_seed(seed: u128) -> u128 {
+    ((seed - ADDEND) * MULTIPLIER_INV) & MASK
+}
+
 // from https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists
 pub fn cartesian_product(lists: &Vec<Vec<u128>>) -> Vec<Vec<u128>> {
     let mut res = vec![];
