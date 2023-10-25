@@ -107,7 +107,7 @@ fn crack_randomstring(token: &String, count: u16, output_len: u16, old: bool, al
         let mut new_check_token = String::from("");
         let mut new_token;
         if previous > 1 {
-            eprintln!("[+] The previous {} tokens are:", previous);
+            eprintln!("[+] The previous {} tokens were:", previous);
         } else if previous == 1 {
             eprintln!("[+] The previous token was:");
         }
