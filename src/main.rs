@@ -103,7 +103,13 @@ fn crack_randomstring(token: &String, count: u16, output_len: u16, old: bool, al
         let mut rsu = RandomStringUtils::new(seed.unwrap(), old);
         let mut delta = 1;
         let mut rolled_seed = rsu.random.seed;
-        let mut check_token = token.to_string();
+        let mut check_token = if alphanumeric {
+            rsu.random_alphanumeric(l)
+        } else {
+            rsu.random_alphabetic(l)
+        };
+        // reset rsu
+        rsu = RandomStringUtils::new(seed.unwrap(), old);
         let mut new_check_token = String::new();
         let mut new_token;
         if previous > 1 {
@@ -117,14 +123,14 @@ fn crack_randomstring(token: &String, count: u16, output_len: u16, old: bool, al
                 let mut rolling_rsu = RandomStringUtils::new_raw(rolled_seed, old);
                 rolled_seed = rollback_seed(rolled_seed);
                 new_check_token = if alphanumeric {
-                    rolling_rsu.random_alphanumeric(token_len)
+                    rolling_rsu.random_alphanumeric(l)
                 } else {
-                    rolling_rsu.random_alphabetic(token_len)
+                    rolling_rsu.random_alphabetic(l)
                 };
                 new_token = if alphanumeric {
-                    rolling_rsu.random_alphanumeric(token_len)
+                    rolling_rsu.random_alphanumeric(l)
                 } else {
-                    rolling_rsu.random_alphabetic(token_len)
+                    rolling_rsu.random_alphabetic(l)
                 };
             }
             check_token = new_check_token.clone();
